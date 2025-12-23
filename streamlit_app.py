@@ -518,8 +518,7 @@ def _apply_current_input() -> None:
     st.session_state.applied_input_str = value
 
 
-def _generate_and_apply_random(size: int, min_value: int, max_value: int, seed: int) -> None:
-    random.seed(int(seed))
+def _generate_and_apply_random(size: int, min_value: int, max_value: int) -> None:
     gen_arr = [random.randint(int(min_value), int(max_value)) for _ in range(int(size))]
     value = " ".join(map(str, gen_arr))
     # Safe here because this runs as a button callback.
@@ -532,14 +531,13 @@ def _generate_sidebar_random() -> None:
     size = int(st.session_state.get("rand_size", 20))
     min_value = int(st.session_state.get("rand_min", 1))
     max_value = int(st.session_state.get("rand_max", 40))
-    seed = int(st.session_state.get("rand_seed", 42))
 
     if max_value < min_value:
         st.session_state.input_error = "Random range: Max must be ≥ Min."
         st.session_state.applied_arr = None
         return
 
-    _generate_and_apply_random(size, min_value, max_value, seed)
+    _generate_and_apply_random(size, min_value, max_value)
 
 
 def plot_lis_visualization(arr: List[int], lis_result: List[int]) -> go.Figure:
@@ -800,7 +798,7 @@ def main():
         background: linear-gradient(90deg, #0052cc 0%, #00a3e0 100%);
         padding: 1.2rem 2rem;
         border-radius: 12px;
-        margin-bottom: 2.5rem;
+        margin-bottom: 2rem;
         box-shadow: 0 8px 32px rgba(0, 82, 204, 0.25),
                     0 2px 8px rgba(0, 0, 0, 0.15);
         backdrop-filter: blur(10px);
@@ -824,7 +822,7 @@ def main():
     .navbar-title {
         color: white;
         margin: 0;
-        font-size: 1.8rem;
+        font-size: 2.4rem;
         font-weight: 700;
         text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
         letter-spacing: -0.3px;
@@ -886,34 +884,39 @@ def main():
     
     /* Tagline styling */
     .tagline-container {
-        text-align: center;
-        margin: 2rem auto;
-        padding: 1.5rem;
+        text-align: left;
+        margin: 0.3rem auto 1rem auto;
+        padding: 0.8rem 1.5rem;
         display: flex;
         flex-direction: column;
-        align-items: center;
-        justify-content: center;
+        align-items: flex-start;
+        justify-content: flex-start;
+        gap: 0.8rem;
     }
     
     .tagline-main {
-        font-size: 1.25rem;
+        font-size: 35px;
         font-weight: 700;
         background: linear-gradient(90deg, #0052cc 0%, #00a3e0 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
-        margin: 0 0 0.8rem 0;
+        margin: 0;
         letter-spacing: 0.5px;
+        display: flex;
+        gap: 1.5rem;
+        align-items: center;
+        flex-wrap: wrap;
     }
     
     .tagline-sub {
         color: #4b5563;
-        font-size: 0.95rem;
+        font-size: 1.05rem;
         margin: 0;
         line-height: 1.8;
-        max-width: 800px;
+        max-width: 900px;
         width: 100%;
-        padding: 0 1rem;
+        padding: 0;
     }
     
     @media (prefers-color-scheme: dark) {
@@ -961,88 +964,24 @@ def main():
     </div>
     """, unsafe_allow_html=True)
 
-    # Quick Start Section - More Beautiful
-    st.divider()
-    st.markdown("<div class='section-header'>🚀 Quick Start Examples</div>", unsafe_allow_html=True)
-    col1, col2 = st.columns(2, gap="small")
-    with col1:
-        st.button(
-            "📝 Example 1: Basic",
-            key="ex1",
-            use_container_width=False,
-            on_click=load_example,
-            args=("10 9 2 5 3 7 101 18",),
-        )
-        st.caption("Standard sequence with mixed order")
-    with col2:
-        st.button(
-            "📝 Example 2: Small",
-            key="ex2",
-            use_container_width=False,
-            on_click=load_example,
-            args=("3 10 2 1 20",),
-        )
-        st.caption("Compact test case")
-
-    # Test Cases Section
+    # Test Cases - Simplified
     st.divider()
     st.markdown("<div class='section-header'>📚 Test Cases</div>", unsafe_allow_html=True)
+    
     sample_ids = list(PredefinedInputs.SAMPLES.keys())
-    sample_labels = [f"{k}. {PredefinedInputs.SAMPLES[k]['name']}" for k in sample_ids]
-    selected_idx = 0
-    selected_label = st.selectbox("Choose a test case", options=sample_labels, index=selected_idx, label_visibility="collapsed")
-    selected_id = selected_label.split(".")[0]
-    sample = PredefinedInputs.get_sample_info(selected_id)
+    sample_labels = [f"{PredefinedInputs.SAMPLES[k]['name']}" for k in sample_ids]
+    selected_label = st.selectbox("Choose a preset:", options=sample_labels, label_visibility="collapsed")
+    
+    for sid in sample_ids:
+        if PredefinedInputs.SAMPLES[sid]['name'] == selected_label:
+            sample = PredefinedInputs.get_sample_info(sid)
+            break
+    
     if sample:
-        with st.container(border=True):
-            col_desc, col_info = st.columns([2, 1])
-            with col_desc:
-                st.markdown(f"<p style='color: #555; font-size: 0.9rem;'><i>{sample.get('description', '')}</i></p>", unsafe_allow_html=True)
-                st.code(sample["array"], language="python")
-            with col_info:
-                st.write("")
-                st.metric("Expected Length", int(sample.get('expected_length', 0)))
-            
-            st.markdown(f"<p style='color: #666; font-size: 0.85rem;'>📌 Expected LIS: <code>{sample.get('expected_lis')}</code></p>", unsafe_allow_html=True)
-            
-            st.button(
-                "✅ Load Test Case",
-                key="load_sample_case",
-                use_container_width=False,
-                on_click=load_example,
-                args=(" ".join(map(str, sample["array"])),),
-            )
-
-    # Random Array Generation Section
-    st.divider()
-    st.markdown("<div class='section-header'>🎲 Random Array Generator</div>", unsafe_allow_html=True)
-    with st.container(border=True):
-        rand_cols = st.columns(4)
-        with rand_cols[0]:
-            rand_size = st.number_input("Size", min_value=1, max_value=10000, value=20, step=1, key="rand_size")
-        with rand_cols[1]:
-            rand_min = st.number_input("Min", value=-50, step=1, key="rand_min")
-        with rand_cols[2]:
-            rand_max = st.number_input("Max", value=50, step=1, key="rand_max")
-        with rand_cols[3]:
-            rand_seed = st.number_input(
-                "Seed",
-                min_value=0,
-                max_value=10_000_000,
-                value=42,
-                step=1,
-                key="rand_seed",
-            )
-        
-        if rand_max < rand_min:
-            st.error("⚠️ Max must be ≥ Min")
-        else:
-            st.button(
-                "🔄 Generate Random Array",
-                key="rand_generate",
-                use_container_width=False,
-                on_click=_generate_sidebar_random,
-            )
+        st.markdown(f"**{sample.get('description', '')}**")
+        st.code(sample["array"])
+        if st.button("✅ Load", key="load_sample_case", use_container_width=True):
+            load_example(" ".join(map(str, sample["array"])))
 
     # Main content
     st.divider()
@@ -1050,51 +989,50 @@ def main():
     # Input section
     with st.container(border=True):
         st.markdown("## 📥 Input Array")
-        col1, col2 = st.columns([3, 1])
-        with col1:
-            user_input = st.text_area(
-                "Enter integers (comma or space separated)",
-                placeholder="Example: 10 9 2 5 3 7 101 18",
-                help="You can use commas, spaces, or brackets to separate numbers",
-                key="array_input",
-                height=100,
-            )
-        with col2:
-            st.write("")
-            st.write("")
-            st.button("✓ Enter", key="enter_input", width="stretch", on_click=_apply_current_input)
+        
+        # Simpler input with better visual hierarchy
+        user_input = st.text_area(
+            "Enter integers (comma or space separated)",
+            placeholder="Example: 10 9 2 5 3 7 101 18",
+            help="Separate numbers with spaces or commas",
+            key="array_input",
+            height=80,
+        )
+        
+        col_btn1, col_btn2 = st.columns(2)
+        with col_btn1:
+            st.button("✓ Enter Array", key="enter_input", use_container_width=True, on_click=_apply_current_input)
+        with col_btn2:
+            with st.expander("🎲 Generate Random", expanded=False):
+                rg1, rg2, rg3 = st.columns(3)
+                with rg1:
+                    g_size = st.number_input("Size", min_value=1, max_value=10000, value=10, step=1, key="rg_size")
+                with rg2:
+                    g_min = st.number_input("Min", value=1, step=1, key="rg_min")
+                with rg3:
+                    g_max = st.number_input("Max", value=30, step=1, key="rg_max")
 
-        with st.expander("🎲 Generate Random Array", expanded=False):
-            rg1, rg2, rg3, rg4 = st.columns(4)
-            with rg1:
-                g_size = st.number_input("Size", min_value=1, max_value=10000, value=10, step=1, key="rg_size")
-            with rg2:
-                g_min = st.number_input("Min", value=1, step=1, key="rg_min")
-            with rg3:
-                g_max = st.number_input("Max", value=30, step=1, key="rg_max")
-            with rg4:
-                g_seed = st.number_input("Seed", min_value=0, max_value=10_000_000, value=42, step=1, key="rg_seed")
-
-            if g_max < g_min:
-                st.error("❌ Max must be ≥ Min")
-            else:
-                st.button(
-                    "🔄 Generate & Enter",
-                    key="rg_generate",
-                    width="stretch",
-                    on_click=_generate_and_apply_random,
-                    args=(int(g_size), int(g_min), int(g_max), int(g_seed)),
-                )
+                if g_max < g_min:
+                    st.error("❌ Max must be ≥ Min")
+                else:
+                    st.button(
+                        "🔄 Generate",
+                        key="rg_generate",
+                        use_container_width=True,
+                        on_click=_generate_and_apply_random,
+                        args=(int(g_size), int(g_min), int(g_max)),
+                    )
 
         if st.session_state.input_error:
-            st.error(f"❌ Error: {st.session_state.input_error}")
+            st.error(f"❌ {st.session_state.input_error}")
+            st.stop()
 
         if st.session_state.applied_arr is None:
-            st.info("💡 Tip: Type your array, then click **Enter** to proceed.")
+            st.info("💡 Tip: Enter an array or generate a random one to start")
             st.stop()
 
         if st.session_state.applied_input_str != st.session_state.array_input:
-            st.warning("⚠️ Input changed. Click **Enter** to apply the new array.")
+            st.warning("⚠️ Array changed. Click **Enter Array** to apply.")
 
     arr = st.session_state.applied_arr
 
@@ -1111,23 +1049,16 @@ def main():
     # Algorithm selection and execution
     with st.container(border=True):
         st.markdown("## ⚙️ Run Algorithm")
-        
-        col1, col2, col3 = st.columns([2, 2, 1])
+        col1, col2 = st.columns([3, 1])
         with col1:
-            algo_choice = st.selectbox(
-                "Choose Algorithm",
-                options=[
-                    "O(n²) Dynamic Programming",
-                    "O(n log n) Binary Search + DP",
-                    "⚡ Compare Both (run both)",
-                ],
-                index=1,
+            algo_choice = st.radio(
+                "Choose Algorithm:",
+                ["O(n²) - Simple DP", "O(n log n) - Binary Search", "Compare Both"],
+                horizontal=True,
             )
         with col2:
             st.write("")
-            st.write("")
-        with col3:
-            run_button = st.button("▶️ Run", key="run_one", width="stretch", use_container_width=True)
+            run_button = st.button("▶️ Run", key="run_one", use_container_width=True)
 
     if run_button:
         # Execute algorithm(s)
@@ -1216,12 +1147,10 @@ def main():
                     st.code(last["lis_nlogn"], language="python")
                 
                 with tab3:
-                    c1, c2, c3, c4 = st.columns(4)
+                    c1, c2, c3 = st.columns(3)
                     c1.metric("🔴 O(n²) Time", f"{last['time_ms_n2']:.4f} ms")
                     c2.metric("🟢 O(n log n) Time", f"{last['time_ms_nlogn']:.4f} ms")
-                    speedup = last['time_ms_n2'] / last['time_ms_nlogn'] if last['time_ms_nlogn'] > 0 else float('inf')
-                    c3.metric("⚡ Speedup", f"{speedup:.2f}x")
-                    c4.metric("✓ Same Length?", "Yes" if last['length_n2'] == last['length_nlogn'] else "❌ No")
+                    c3.metric("✓ Same Length?", "Yes" if last['length_n2'] == last['length_nlogn'] else "❌ No")
                     
                     # Comparison chart
                     fig_comp = go.Figure()
@@ -1351,13 +1280,11 @@ def main():
                     
                     avg_n2 = statistics.mean(times_n2)
                     avg_nlogn = statistics.mean(times_nlogn)
-                    speedup = (avg_n2 / avg_nlogn) if avg_nlogn > 0 else float("inf")
                     
-                    m1, m2, m3, m4 = st.columns(4)
+                    m1, m2, m3 = st.columns(3)
                     m1.metric("🔴 O(n²) Avg", f"{avg_n2:.4f} ms")
                     m2.metric("🟢 O(n log n) Avg", f"{avg_nlogn:.4f} ms")
-                    m3.metric("⚡ Speedup", f"{speedup:.2f}x")
-                    m4.metric("📊 Runs", int(bench_runs))
+                    m3.metric("📊 Runs", int(bench_runs))
                     
                     st.markdown(f"**Raw times (ms):** {', '.join(f'{t:.4f}' for t in times_n2[:5])}..." if len(times_n2) > 5 else f"**Raw times (ms):** {', '.join(f'{t:.4f}' for t in times_n2)}")
                 else:
@@ -1403,64 +1330,73 @@ def main():
     # Step-by-step visualization section
     with st.container(border=True):
         st.markdown("## 👣 Step-by-Step Trace")
-        st.markdown("Follow the algorithm execution step-by-step. Works best with arrays ≤ 50 elements.")
+        st.markdown("Watch how the algorithm builds the LIS step-by-step. Best with arrays ≤ 50 elements.")
 
         if len(arr) > 50:
-            st.warning("⚠️ Arrays larger than 50 elements are not supported for step-by-step view. Use a smaller array.")
+            st.warning("⚠️ Step-by-step tracing works best with ≤ 50 elements. Your array has {}.".format(len(arr)))
             return
 
         tab_dp, tab_bs = st.tabs(["🔴 O(n²) DP Algorithm", "🟢 O(n log n) Binary Search"])
 
         with tab_dp:
             dp_len, dp_lis, dp_steps = trace_lis_n2(arr)
-            step_idx = st.slider("Select step", 0, len(dp_steps) - 1, 0, key="dp_step")
+            step_idx = st.slider("Choose step", 0, len(dp_steps) - 1, 0, key="dp_step")
             step = dp_steps[step_idx]
             
-            st.markdown(f"### Step {step_idx + 1}: {step['title']}")
-            st.info(f"📝 {step['description']}")
+            # Better step visualization
+            st.markdown(f"### **Step {step_idx + 1}:** {step['title']}")
+            st.info(f"💡 {step['description']}")
             
-            col1, col2 = st.columns(2)
-            with col1:
+            # Show array progress
+            st.markdown("**Current State:**")
+            st.write(f"🔢 **dp array** (LIS length up to each index):")
+            st.code(str(step.get('dp', [])))
+            
+            # Show current indices if available
+            if "i" in step or "j" in step:
+                st.divider()
+                st.markdown("**Current Comparison:**")
+                metric_cols = st.columns(2)
                 if "i" in step:
-                    st.write(f"**Current index (i):** {step.get('i')}")
+                    with metric_cols[0]:
+                        st.metric("Index i", f"arr[{step.get('i')}] = {arr[step.get('i')] if step.get('i') < len(arr) else 'N/A'}")
                 if "j" in step:
-                    st.write(f"**Comparison index (j):** {step.get('j')}")
-            with col2:
-                if "i" in step or "j" in step:
-                    pass
-                else:
-                    pass
-            
-            st.write(f"**dp array:** {step.get('dp', [])}")
-            st.write(f"**parent array:** {step.get('parent', [])}")
+                    with metric_cols[1]:
+                        st.metric("Index j", f"arr[{step.get('j')}] = {arr[step.get('j')] if step.get('j') < len(arr) else 'N/A'}")
             
             if step_idx == len(dp_steps) - 1:
-                st.success(f"✅ **Final Result:** LIS length = {dp_len}, LIS = {dp_lis}")
+                st.success(f"✅ **Complete!** LIS length = **{dp_len}**, Sequence = **{dp_lis}**")
 
         with tab_bs:
             bs_len, bs_lis, bs_steps = trace_lis_nlogn(arr)
-            step_idx = st.slider("Select step", 0, len(bs_steps) - 1, 0, key="bs_step")
+            step_idx = st.slider("Choose step", 0, len(bs_steps) - 1, 0, key="bs_step")
             step = bs_steps[step_idx]
             
-            st.markdown(f"### Step {step_idx + 1}: {step['title']}")
-            st.info(f"📝 {step['description']}")
+            # Better step visualization
+            st.markdown(f"### **Step {step_idx + 1}:** {step['title']}")
+            st.info(f"💡 {step['description']}")
             
-            col1, col2 = st.columns(2)
-            with col1:
-                if "i" in step:
-                    st.write(f"**Current index (i):** {step.get('i')}")
-                if "pos" in step:
-                    st.write(f"**Binary search position:** {step.get('pos')}")
-            with col2:
-                if "action" in step:
-                    st.write(f"**Action:** {step.get('action').upper()}")
+            # Show arrays
+            st.markdown("**Current State:**")
+            st.write(f"📊 **tails array** (smallest ending value for each LIS length):")
+            st.code(str(step.get('tails', [])))
             
-            st.write(f"**tails array:** {step.get('tails', [])}")
-            st.write(f"**lis_index array:** {step.get('lis_index', [])}")
-            st.write(f"**parent array:** {step.get('parent', [])}")
+            # Show current action
+            if "action" in step:
+                st.divider()
+                st.markdown("**Current Action:**")
+                if step.get('action').upper() == 'INSERT':
+                    st.success(f"➕ Inserting new element")
+                elif step.get('action').upper() == 'APPEND':
+                    st.success(f"➕ Appending to extend LIS")
+                else:
+                    st.info(f"🔍 {step.get('action').upper()}")
+            
+            if "i" in step:
+                st.markdown(f"**Current Element:** arr[{step.get('i')}] = **{arr[step.get('i')] if step.get('i') < len(arr) else 'N/A'}**")
             
             if step_idx == len(bs_steps) - 1:
-                st.success(f"✅ **Final Result:** LIS length = {bs_len}, LIS = {bs_lis}")
+                st.success(f"✅ **Complete!** LIS length = **{bs_len}**, Sequence = **{bs_lis}**")
 
     st.divider()
     st.markdown("<p style='text-align: center; color: #95a5a6; font-size: 0.9rem;'><b>© 2025 DAA Semester Project</b> | Professional Edition v2.0</p>", unsafe_allow_html=True)
